@@ -28,6 +28,7 @@
     background: var(--dark);
     color: var(--text);
     font-family: 'EB Garamond', serif;
+    font-size: 18px;
     min-height: 100vh;
     overflow-x: hidden;
   }
@@ -52,11 +53,18 @@
   }
 
   .container {
-    max-width: 900px;
+    max-width: 1400px;
+    width: 100%;
     margin: 0 auto;
-    padding: 40px 20px 80px;
+    padding: 60px 60px 100px;
     position: relative;
     z-index: 1;
+  }
+
+  @media (max-width: 900px) {
+    .container {
+      padding: 40px 24px 80px;
+    }
   }
 
   /* ─── HEADER ─── */
@@ -142,8 +150,8 @@
   /* ─── STATS BLOCK ─── */
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
     margin-bottom: 40px;
   }
 
@@ -228,8 +236,8 @@
   /* ─── ABILITY CARDS ─── */
   .abilities-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
   }
 
   .ability-card {
@@ -296,7 +304,7 @@
   .ability-tag.passive { border-color: rgba(60,80,40,0.5); color: #607050; }
 
   .ability-desc {
-    font-size: 0.88rem;
+    font-size: 1rem;
     line-height: 1.65;
     color: var(--text);
   }
@@ -349,7 +357,7 @@
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 40px;
-    font-size: 0.85rem;
+    font-size: 1rem;
   }
 
   .threat-table th {
@@ -431,7 +439,7 @@
   /* ─── WEAKNESSES ─── */
   .weakness-list {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 10px;
     margin-bottom: 40px;
   }
@@ -440,9 +448,9 @@
     background: var(--card);
     border: 1px solid var(--card-border);
     border-left: 3px solid #304858;
-    padding: 12px 14px;
-    font-size: 0.84rem;
-    line-height: 1.5;
+    padding: 14px 16px;
+    font-size: 1rem;
+    line-height: 1.6;
   }
 
   .weakness-item strong {
@@ -485,8 +493,8 @@
     border-top: 2px solid var(--blood);
     padding: 24px 26px;
     margin-bottom: 14px;
-    font-size: 0.9rem;
-    line-height: 1.8;
+    font-size: 1rem;
+    line-height: 1.85;
     color: var(--text);
     position: relative;
   }
@@ -567,7 +575,7 @@
   }
 
   .timeline-desc {
-    font-size: 0.86rem;
+    font-size: 1rem;
     line-height: 1.65;
     color: var(--text);
   }
@@ -575,7 +583,7 @@
   /* ─── RELATIONSHIPS ─── */
   .rel-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 14px;
     margin-bottom: 40px;
   }
@@ -630,7 +638,7 @@
   .rel-status.bond { color: #c090d0; border-color: #c090d0; }
 
   .rel-desc {
-    font-size: 0.85rem;
+    font-size: 1rem;
     line-height: 1.65;
     color: var(--text);
   }
