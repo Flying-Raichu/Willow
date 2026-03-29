@@ -239,13 +239,13 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
     gap: 16px;
+    align-items: start;
   }
 
   .ability-card {
     background: var(--card);
     border: 1px solid var(--card-border);
     border-left: 3px solid var(--blood);
-    padding: 22px 22px 18px;
     transition: border-left-color 0.2s, background 0.2s;
     position: relative;
     overflow: hidden;
@@ -257,22 +257,65 @@
     top: 0; right: 0;
     width: 40px; height: 40px;
     background: linear-gradient(225deg, rgba(139,0,0,0.15), transparent);
+    pointer-events: none;
   }
 
-  .ability-card:hover {
-    border-left-color: var(--gold);
-    background: #1f0d0d;
+  .ability-card:hover { border-left-color: var(--gold); background: #1f0d0d; }
+  .ability-card.signature { border-left-color: var(--gold); background: #1c0e08; }
+
+  /* ─── SHARED DRAWER SYSTEM ─── */
+  .card-header {
+    padding: 18px 22px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    user-select: none;
   }
 
-  .ability-card.signature {
-    border-left-color: var(--gold);
-    background: #1c0e08;
+  .card-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
   }
 
-  .ability-card.signature::after {
-    content: '★';
-    position: absolute;
-    top: 14px; right: 16px;
+  .card-chevron {
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    transition: transform 0.25s ease, color 0.2s;
+    flex-shrink: 0;
+    opacity: 0.5;
+    align-self: center;
+  }
+
+  .ability-card.open .card-chevron,
+  .rel-card.open .card-chevron,
+  .timeline-event.open .card-chevron { transform: rotate(180deg); color: var(--gold); opacity: 1; }
+
+  .card-drawer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 0 22px;
+  }
+
+  .ability-card.open .card-drawer,
+  .rel-card.open .card-drawer,
+  .timeline-event.open .card-drawer {
+    max-height: 800px;
+    padding: 0 22px 18px;
+    transition: max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-drawer-inner {
+    border-top: 1px solid var(--card-border);
+    padding-top: 14px;
+  }
+
+  .ability-card.signature .card-header .star-badge {
     color: var(--gold);
     font-size: 1rem;
     opacity: 0.7;
@@ -283,27 +326,34 @@
     font-size: 1.1rem;
     color: #e8c8b0;
     letter-spacing: 0.08em;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
   }
 
   .ability-tag {
     font-size: 0.7rem;
     letter-spacing: 0.2em;
-    padding: 3px 8px;
+    padding: 3px 10px;
     border: 1px solid var(--card-border);
     color: var(--text-dim);
     text-transform: uppercase;
     font-family: 'Cinzel', serif;
+    display: inline-block;
+    align-self: flex-start;
   }
 
-  .ability-tag.warp { border-color: rgba(139,0,0,0.5); color: #c07060; }
-  .ability-tag.physical { border-color: rgba(100,60,20,0.5); color: #a08040; }
-  .ability-tag.symbiote { border-color: rgba(20,60,80,0.5); color: #508090; }
-  .ability-tag.passive { border-color: rgba(60,80,40,0.5); color: #607050; }
+
+  /* ─── ABILITY TAG COLOURS — type of power ─── */
+  .ability-tag.warp     { border-color: rgba(120,80,220,0.55); color: #9b6dff; }
+  .ability-tag.physical { border-color: rgba(180,120,40,0.55); color: #c8862a; }
+  .ability-tag.symbiote { border-color: rgba(30,170,165,0.55); color: #3dbcb8; }
+  .ability-tag.passive  { border-color: rgba(100,120,140,0.45); color: #7a8a9a; }
+  .ability-tag.tech     { border-color: rgba(120,145,70,0.55); color: #8a9e5a; }
+
+  /* ─── RELATIONSHIP STATUS COLOURS — sentiment ─── */
+  .rel-status.ally    { border-color: rgba(70,140,90,0.6);   color: #5a9e6a; }
+  .rel-status.hostile { border-color: rgba(160,40,40,0.6);   color: #b03030; }
+  .rel-status.bond    { border-color: rgba(180,155,60,0.6);  color: #c9a84c; }
+  .rel-status.complex { border-color: rgba(180,120,40,0.6);  color: #c8862a; }
+  .rel-status.wary    { border-color: rgba(60,100,130,0.6);  color: #4a7090; }
 
   .ability-desc {
     font-size: 1.05rem;
@@ -520,64 +570,440 @@
   .timeline {
     position: relative;
     margin-bottom: 40px;
-    padding-left: 36px;
-  }
-
-  .timeline::before {
-    content: '';
-    position: absolute;
-    left: 8px; top: 0; bottom: 0;
-    width: 1px;
-    background: linear-gradient(180deg, var(--crimson), var(--blood), transparent);
+    padding-left: 28px;
+    border-left: 1px solid var(--crimson);
   }
 
   .timeline-event {
     position: relative;
-    margin-bottom: 28px;
+    margin-bottom: 10px;
+    background: transparent;
+    border: none;
+    border-left: 2px solid transparent;
+    padding: 0;
+    cursor: pointer;
+    transition: border-left-color 0.2s;
+  }
+
+  .timeline-event:hover { border-left-color: var(--blood); }
+
+  .timeline-event.milestone {
+    border-left-color: rgba(201,168,76,0.5);
+    margin-bottom: 14px;
+  }
+
+  .timeline-event.milestone:hover {
+    border-left-color: var(--gold);
   }
 
   .timeline-event::before {
     content: '';
     position: absolute;
-    left: -30px;
-    top: 6px;
-    width: 10px; height: 10px;
+    left: -33px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 9px; height: 9px;
     border-radius: 50%;
+    background: var(--blood);
+    border: 1px solid var(--crimson);
+    box-shadow: 0 0 6px rgba(192,57,43,0.5);
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+
+  .timeline-event:hover::before {
     background: var(--crimson);
-    border: 1px solid var(--gold);
-    box-shadow: 0 0 8px rgba(192,57,43,0.6);
+    box-shadow: 0 0 10px rgba(192,57,43,0.8);
   }
 
   .timeline-event.milestone::before {
-    background: var(--gold);
-    width: 12px; height: 12px;
-    left: -31px;
-    box-shadow: 0 0 12px rgba(201,168,76,0.8);
+    background: #2a1800;
+    border-color: var(--gold);
+    width: 11px; height: 11px;
+    left: -34px;
+    box-shadow: 0 0 10px rgba(201,168,76,0.6);
   }
+
+  .timeline-event.milestone:hover::before {
+    background: var(--gold);
+    box-shadow: 0 0 14px rgba(201,168,76,1);
+  }
+
+  .timeline-event .card-header {
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .timeline-event.milestone .card-header {
+    border-top: 1px solid rgba(201,168,76,0.35);
+    border-bottom: 1px solid rgba(201,168,76,0.15);
+    border-right: 1px solid rgba(201,168,76,0.15);
+    background: rgba(201,168,76,0.07);
+    padding: 14px 16px;
+  }
+
+  .timeline-event-summary { flex: 1; }
 
   .timeline-label {
     font-family: 'Cinzel', serif;
-    font-size: 0.8rem;
-    letter-spacing: 0.3em;
+    font-size: 0.75rem;
+    letter-spacing: 0.35em;
     color: var(--crimson);
     text-transform: uppercase;
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
 
-  .timeline-event.milestone .timeline-label {
-    color: var(--gold);
-  }
+  .timeline-event.milestone .timeline-label { color: var(--gold); }
 
   .timeline-title {
     font-family: 'Cinzel', serif;
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: #e8c8b0;
-    margin-bottom: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  .timeline-event.milestone .timeline-title {
+    color: var(--pale-gold);
+  }
+
+  .timeline-event.open .card-header {
+    background: rgba(139,0,0,0.08);
+  }
+
+  .timeline-event.milestone.open .card-header {
+    background: rgba(201,168,76,0.08);
+  }
+
+  .timeline-event .card-drawer {
+    padding: 0 16px;
+  }
+
+  .timeline-event.open .card-drawer {
+    padding: 0 16px 14px;
+    border-top: none;
+  }
+
+  .timeline-event .card-drawer-inner {
+    border-top: 1px solid var(--card-border);
+    padding-top: 10px;
+  }
+
+  /* ─── TIMELINE OPERATIONS ─── */
+  .timeline-operation {
+    position: relative;
+    margin-bottom: 10px;
+    border-left: 2px solid rgba(139,0,0,0.4);
+  }
+
+  .timeline-operation:hover { border-left-color: var(--crimson); }
+
+  .timeline-operation::before {
+    content: '';
+    position: absolute;
+    left: -33px;
+    top: 22px;
+    width: 11px; height: 11px;
+    border-radius: 2px;
+    background: var(--blood);
+    border: 1px solid var(--crimson);
+    box-shadow: 0 0 6px rgba(192,57,43,0.5);
+    transform: rotate(45deg);
+  }
+
+  .timeline-operation-header {
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+    background: rgba(139,0,0,0.06);
+    border-bottom: 1px solid var(--card-border);
+    transition: background 0.2s;
+  }
+
+  .timeline-operation-header:hover { background: rgba(139,0,0,0.12); }
+  .timeline-operation.open .timeline-operation-header { background: rgba(139,0,0,0.1); }
+
+  .timeline-operation-type {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.4em;
+    color: var(--crimson);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 1px;
+    opacity: 0.7;
+  }
+
+  .timeline-operation-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    color: #e8c8b0;
+    letter-spacing: 0.04em;
+  }
+
+  .timeline-type-incident {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.4em;
+    color: var(--crimson);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 1px;
+    opacity: 0.7;
+  }
+
+  .timeline-event.milestone .timeline-type-incident {
+    color: var(--gold);
+  }
+
+  .timeline-operation-date {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.35em;
+    color: var(--crimson);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 1px;
+    opacity: 0.7;
+  }
+
+  .timeline-operation.milestone-op .timeline-operation-date {
+    color: var(--gold);
+  }
+
+  /* ─── TIMELINE LEGEND ─── */
+  .timeline-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 20px;
+    padding: 14px 18px;
+    border: 1px solid var(--card-border);
+    border-top: 2px solid var(--blood);
+    background: var(--card);
+  }
+
+  .timeline-legend-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.4em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    width: 100%;
+    margin-bottom: 4px;
+  }
+
+  .timeline-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 1px solid var(--crimson);
+    background: var(--blood);
+    box-shadow: 0 0 6px rgba(192,57,43,0.4);
+  }
+
+  .legend-dot.milestone {
+    background: #2a1800;
+    border-color: var(--gold);
+    box-shadow: 0 0 8px rgba(201,168,76,0.5);
+  }
+
+  .legend-diamond {
+    width: 10px; height: 10px;
+    flex-shrink: 0;
+    background: var(--blood);
+    border: 1px solid var(--crimson);
+    transform: rotate(45deg);
+    box-shadow: 0 0 6px rgba(192,57,43,0.4);
+  }
+
+  .legend-diamond.milestone {
+    background: #2a1800;
+    border-color: var(--gold);
+    box-shadow: 0 0 8px rgba(201,168,76,0.5);
+  }
+
+  .legend-gap {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 1px dashed rgba(139,0,0,0.5);
+    background: transparent;
+  }
+
+  .timeline-operation-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .timeline-operation.open .timeline-operation-body {
+    max-height: 6000px;
+    transition: max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .timeline-sub-events {
+    padding: 10px 0 6px 20px;
+    border-left: 1px dashed rgba(139,0,0,0.3);
+    margin: 8px 16px 8px 16px;
+  }
+
+  .timeline-sub-event {
+    position: relative;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .timeline-sub-event:hover { opacity: 0.85; }
+
+  .timeline-sub-event::before {
+    content: '';
+    position: absolute;
+    left: -24px;
+    top: 10px;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--card-border);
+    border: 1px solid var(--crimson);
+  }
+
+  .timeline-sub-header {
+    padding: 6px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    user-select: none;
+  }
+
+  .timeline-sub-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.68rem;
+    letter-spacing: 0.3em;
+    color: var(--crimson);
+    text-transform: uppercase;
+    opacity: 0.7;
+    display: block;
+    margin-bottom: 1px;
+  }
+
+  .timeline-sub-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    color: var(--text);
+    letter-spacing: 0.03em;
+  }
+
+  .timeline-sub-chevron {
+    color: var(--text-dim);
+    font-size: 0.65rem;
+    transition: transform 0.2s;
+    opacity: 0.4;
+    flex-shrink: 0;
+  }
+
+  .timeline-sub-event.open .timeline-sub-chevron { transform: rotate(180deg); opacity: 0.8; }
+
+  .timeline-sub-drawer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .timeline-sub-event.open .timeline-sub-drawer {
+    max-height: 2000px;
+    padding-bottom: 8px;
+    transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .timeline-sub-desc {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--text-dim);
+    padding-top: 6px;
+    border-top: 1px solid var(--card-border);
+  }
+
+  .timeline-op-chevron {
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    transition: transform 0.25s ease, color 0.2s;
+    flex-shrink: 0;
+    opacity: 0.5;
+  }
+
+  .timeline-operation.open .timeline-op-chevron { transform: rotate(180deg); color: var(--crimson); opacity: 1; }
+
+  /* ─── MILESTONE OPERATION VARIANT ─── */
+  .timeline-operation.milestone-op { border-left-color: rgba(201,168,76,0.5); }
+  .timeline-operation.milestone-op::before { border-color: var(--gold); background: #2a1800; box-shadow: 0 0 10px rgba(201,168,76,0.6); }
+  .timeline-operation.milestone-op .timeline-operation-header { background: rgba(201,168,76,0.07); border-bottom-color: rgba(201,168,76,0.2); }
+  .timeline-operation.milestone-op .timeline-operation-header:hover { background: rgba(201,168,76,0.12); }
+  .timeline-operation.milestone-op .timeline-operation-type { color: var(--gold); }
+  .timeline-operation.milestone-op .timeline-operation-title { color: var(--pale-gold); }
+  .timeline-operation.milestone-op.open .timeline-op-chevron { color: var(--gold); }
+
+  .timeline-gap {
+    position: relative;
+    margin: 4px 0 4px 0;
+    padding: 10px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    border-left: 2px dashed rgba(139,0,0,0.35);
+    margin-left: 2px;
+  }
+
+  .timeline-gap::before {
+    content: '';
+    position: absolute;
+    left: -33px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    border: 1px dashed rgba(139,0,0,0.5);
+    background: transparent;
+  }
+
+  .timeline-gap-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.3em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    opacity: 0.6;
+  }
+
+  .timeline-gap-note {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    font-style: italic;
+    opacity: 0.5;
   }
 
   .timeline-desc {
-    font-size: 1.05rem;
+    font-size: 1rem;
     line-height: 1.7;
     color: var(--text);
   }
@@ -588,21 +1014,35 @@
     grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
     gap: 16px;
     margin-bottom: 40px;
+    align-items: start;
   }
 
   .rel-card {
     background: var(--card);
     border: 1px solid var(--card-border);
-    padding: 22px 22px 18px;
     position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .rel-card:hover { background: #1f0d0d; }
+
+  .rel-card .card-header {
+    padding: 18px 22px 14px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
   }
 
   .rel-card-header {
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    margin-bottom: 10px;
-    gap: 10px;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
+    min-width: 0;
   }
 
   .rel-name {
@@ -618,26 +1058,31 @@
     letter-spacing: 0.2em;
     text-transform: uppercase;
     color: var(--text-dim);
-    white-space: nowrap;
-    padding-top: 3px;
   }
 
   .rel-status {
     display: inline-block;
     font-family: 'Cinzel', serif;
-    font-size: 0.75rem;
-    letter-spacing: 0.25em;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
-    padding: 4px 10px;
+    padding: 3px 10px;
     border: 1px solid;
-    margin-bottom: 12px;
+    margin-top: 6px;
+    align-self: flex-start;
+    white-space: nowrap;
   }
 
-  .rel-status.ally { color: #6ab04c; border-color: #6ab04c; }
-  .rel-status.hostile { color: var(--crimson); border-color: var(--crimson); }
-  .rel-status.complex { color: var(--yellow-eye); border-color: var(--yellow-eye); }
-  .rel-status.wary { color: #508090; border-color: #508090; }
-  .rel-status.bond { color: #c090d0; border-color: #c090d0; }
+
+
+  /* ─── RELATIONSHIP FACTION BORDERS ─── */
+  .rel-card { border-left: 3px solid var(--card-border); }
+  .rel-card.faction-sororitas  { border-left-color: #8b3a5a; }
+  .rel-card.faction-astartes   { border-left-color: #3a5a8b; }
+  .rel-card.faction-chaos      { border-left-color: #6a2a8b; }
+  .rel-card.faction-xenos      { border-left-color: #2a7a7a; }
+  .rel-card.faction-inquisition{ border-left-color: #8b7a2a; }
+  .rel-card.faction-warp       { border-left-color: #3a1a4a; }
 
   .rel-desc {
     font-size: 1.05rem;
@@ -645,8 +1090,54 @@
     color: var(--text);
   }
 
-  /* ─── ABILITY TAG ADDITIONS ─── */
-  .ability-tag.tech { border-color: rgba(40,80,60,0.5); color: #508070; }
+  /* ─── LOCKED PHASES ─── */
+  .phase-section.locked {
+    opacity: 0.38;
+    pointer-events: none;
+    position: relative;
+  }
+
+  .phase-section.locked .phase-badge {
+    background: #1a1a1a;
+    border-color: #333;
+    color: #444;
+  }
+
+  .phase-section.locked .phase-title {
+    color: #444;
+  }
+
+  .phase-section.locked .ability-card {
+    background: #100606;
+    border-left-color: #2a1010;
+    border-color: #1e0e0e;
+  }
+
+  .phase-section.locked .ability-tag {
+    border-color: #2a2020 !important;
+    color: #3a2a2a !important;
+  }
+
+  .phase-section.locked .ability-name,
+  .phase-section.locked .ability-tag,
+  .phase-section.locked .symbiote-box,
+  .phase-section.locked .symbiote-box p,
+  .phase-section.locked .symbiote-box strong {
+    color: #3a2a2a !important;
+  }
+
+  .phase-section.locked .symbiote-box {
+    background: #0a0a0a;
+    border-color: #1a1a1a;
+  }
+
+  .phase-lock-icon {
+    font-size: 0.9rem;
+    color: #444;
+    margin-left: 10px;
+    opacity: 0.7;
+    letter-spacing: 0;
+  }
 
   /* Fade in animation */
   .fade-in {
@@ -706,7 +1197,7 @@
       <div class="stat-value">Mach 20+</div>
       <span class="stat-note">Post-symbiote bond</span>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" style="opacity:0.35;pointer-events:none;">
       <span class="stat-label">Durability</span>
       <div class="stat-value">Astartes+</div>
       <span class="stat-note">Polar bear base → symbiote-reinforced</span>
@@ -718,15 +1209,15 @@
     </div>
     <div class="stat-card">
       <span class="stat-label">Strength</span>
-      <div class="stat-value">Astartes+</div>
-      <span class="stat-note">Claws pierce ceramite</span>
+      <div class="stat-value">Astartes</div>
+      <span class="stat-note">Above human baseline — augmented by symbiote</span>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" style="opacity:0.35;pointer-events:none;">
       <span class="stat-label">Warp Tier</span>
       <div class="stat-value">α-Plus</div>
       <span class="stat-note">Anomalous — non-daemonic</span>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" style="opacity:0.35;pointer-events:none;">
       <span class="stat-label">Combat Tier</span>
       <div class="stat-value">Primarch-Threat</div>
       <span class="stat-note">Conditional — tactical superiority</span>
@@ -755,13 +1246,29 @@
     <div class="category-group">
       <div class="category-label">Movement & Combat</div>
       <div class="abilities-grid">
-        <div class="ability-card">
-          <div class="ability-name">Mach 10 Movement <span class="ability-tag physical">Physical</span></div>
-          <div class="ability-desc">Sustained supersonic movement at approximately Mach 10 (~3.4 km/s). Renders her effectively invisible to unaugmented humans. Space Marines can react but cannot reliably track her in close quarters.</div>
+        <div class="ability-card" onclick="toggleCard(this)">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="ability-name">Mach 10 Movement</div>
+              <span class="ability-tag physical">Physical</span>
+            </div>
+            <span class="card-chevron">▼</span>
+          </div>
+          <div class="card-drawer"><div class="card-drawer-inner">
+            <div class="ability-desc">Sustained supersonic movement at approximately Mach 10 (~3.4 km/s). Renders her effectively invisible to unaugmented humans. Space Marines can react but cannot reliably track her in close quarters.</div>
+          </div></div>
         </div>
-        <div class="ability-card">
-          <div class="ability-name">Ceramite-Rending Claws <span class="ability-tag physical">Physical</span></div>
-          <div class="ability-desc">Natural claws capable of cutting through ceramite armour. Power equivalent to high-end Tyranid bio-weapons or power weapons. Exploits structural weak points via instinctive spatial cognition rather than raw force.</div>
+        <div class="ability-card" onclick="toggleCard(this)">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="ability-name">Ceramite-Rending Claws</div>
+              <span class="ability-tag physical">Physical</span>
+            </div>
+            <span class="card-chevron">▼</span>
+          </div>
+          <div class="card-drawer"><div class="card-drawer-inner">
+            <div class="ability-desc">Natural claws capable of cutting through ceramite armour. Power equivalent to high-end Tyranid bio-weapons or power weapons. Exploits structural weak points via instinctive spatial cognition rather than raw force.</div>
+          </div></div>
         </div>
       </div>
     </div>
@@ -769,132 +1276,294 @@
     <div class="category-group">
       <div class="category-label">Warp — Early Instinct</div>
       <div class="abilities-grid">
-        <div class="ability-card">
-          <div class="ability-name">Micro-Swap <span class="ability-tag warp">Warp</span></div>
-          <div class="ability-desc">Instantly exchanges her position with a similarly-massed object within ~50m line-of-sight. At this stage restricted to objects near her own size. Used to dodge bolter fire, reposition mid-combat, or pull a Marine into her strike path.</div>
-          <div class="ability-limit">Line-of-sight required. ~50m range. Similar mass only. Causes pain, nosebleeds, brief disorientation. Brief cooldown.</div>
+        <div class="ability-card" onclick="toggleCard(this)">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="ability-name">Micro-Swap</div>
+              <span class="ability-tag warp">Warp</span>
+            </div>
+            <span class="card-chevron">▼</span>
+          </div>
+          <div class="card-drawer"><div class="card-drawer-inner">
+            <div class="ability-desc">Instantly exchanges her position with a similarly-massed object within ~50m line-of-sight. At this stage restricted to objects near her own size. Used to dodge bolter fire, reposition mid-combat, or pull a Marine into her strike path.</div>
+            <div class="ability-limit">Line-of-sight required. ~50m range. Similar mass only. Causes pain, nosebleeds, brief disorientation. Brief cooldown.</div>
+          </div></div>
         </div>
-        <div class="ability-card">
-          <div class="ability-name">Micro Momentum Theft <span class="ability-tag warp">Warp</span></div>
-          <div class="ability-desc">Steals kinetic energy from a charging target or incoming projectile in small, precise bursts. A charging Marine loses forward velocity for 0.2 seconds — enough to stumble and be killed. Used sparingly; not yet sustained.</div>
-          <div class="ability-limit">Small bursts only. Cannot redirect Titan-scale force. Requires concentration.</div>
+        <div class="ability-card" onclick="toggleCard(this)">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="ability-name">Micro Momentum Theft</div>
+              <span class="ability-tag warp">Warp</span>
+            </div>
+            <span class="card-chevron">▼</span>
+          </div>
+          <div class="card-drawer"><div class="card-drawer-inner">
+            <div class="ability-desc">Steals kinetic energy from a charging target or incoming projectile in small, precise bursts. A charging Marine loses forward velocity for 0.2 seconds — enough to stumble and be killed. Used sparingly; not yet sustained.</div>
+            <div class="ability-limit">Small bursts only. Cannot redirect Titan-scale force. Requires concentration.</div>
+          </div></div>
         </div>
-        <div class="ability-card">
-          <div class="ability-name">Perception Slip <span class="ability-tag warp">Warp</span></div>
-          <div class="ability-desc">Introduces a 0.1–0.3 second perception lag between her actual position and what others see. Astartes shoot afterimages. Effective against standard Marines. Not yet sufficient against Primarchs.</div>
-          <div class="ability-limit">Millisecond desync only. Does not fool precognition. Primarch-tier beings partially compensate.</div>
+        <div class="ability-card" onclick="toggleCard(this)">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="ability-name">Perception Slip</div>
+              <span class="ability-tag warp">Warp</span>
+            </div>
+            <span class="card-chevron">▼</span>
+          </div>
+          <div class="card-drawer"><div class="card-drawer-inner">
+            <div class="ability-desc">Introduces a 0.1–0.3 second perception lag between her actual position and what others see. Astartes shoot afterimages. Effective against standard Marines. Not yet sufficient against Primarchs.</div>
+            <div class="ability-limit">Millisecond desync only. Does not fool precognition. Primarch-tier beings partially compensate.</div>
+          </div></div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- ═══ PHASE II ═══ -->
-  <div class="phase-section fade-in">
+    <div class="category-group">
+      <div class="category-label">Symbiote — Active</div>
+      <div class="abilities-grid">
+        <div class="ability-card" onclick="toggleCard(this)">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="ability-name">Symbiote Regeneration</div>
+              <span class="ability-tag symbiote">Symbiote</span>
+            </div>
+            <span class="card-chevron">▼</span>
+          </div>
+          <div class="card-drawer"><div class="card-drawer-inner">
+            <div class="ability-desc">The symbiote actively repairs Aeryn's body, closing bolter wounds and stabilising catastrophic trauma over time. It cannot replace lost limbs instantly, but keeps her functional through injuries that would kill an unaugmented human outright. The regeneration is the first capability the symbiote bond activated — present from the moment of bonding, before any other integration had taken hold.</div>
+            <div class="ability-limit">Moderate rate — not combat-speed regeneration. Severe injuries require hours to days. Cannot regenerate destroyed limbs without time and resource cost.</div>
+          </div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="phase-section fade-in locked">
     <div class="phase-header">
       <div class="phase-badge">Phase II</div>
-      <span class="phase-title">The Hunter — Years of Obsession</span>
+      <span class="phase-title">The Hunter — Years of Obsession <span class="phase-lock-icon">🔒</span></span>
       <div class="phase-line"></div>
     </div>
 
     <div class="abilities-grid">
-      <div class="ability-card">
-        <div class="ability-name">Extended Position Swap <span class="ability-tag warp">Warp</span></div>
-        <div class="ability-desc">The swap now operates on conceptual anchoring rather than mass equivalence. She can exchange position with objects as large as a Dreadnought or a Thunderhawk in flight. Swapping targets mid-charge forces them into artillery fire, rubble, or structural hazards.</div>
-        <div class="ability-limit">Still line-of-sight. Taxing at large mass differentials. Heavy strain at vehicle/ship scale.</div>
+      <div class="ability-card" onclick="toggleCard(this)">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="ability-name">Extended Position Swap</div>
+              <span class="ability-tag warp">Warp</span>
+          </div>
+          <span class="card-chevron">▼</span>
+        </div>
+        <div class="card-drawer"><div class="card-drawer-inner">
+          <div class="ability-desc">The swap now operates on conceptual anchoring rather than mass equivalence. She can exchange position with objects as large as a Dreadnought or a Thunderhawk in flight. Swapping targets mid-charge forces them into artillery fire, rubble, or structural hazards.</div>
+          <div class="ability-limit">Still line-of-sight. Taxing at large mass differentials. Heavy strain at vehicle/ship scale.</div>
+        </div></div>
       </div>
-      <div class="ability-card">
-        <div class="ability-name">Systemic Momentum Theft <span class="ability-tag warp">Warp</span></div>
-        <div class="ability-desc">Steals momentum from entire systems rather than individuals. A Titan's leg carries lateral force. A tank's recoil transfers sideways. A power fist's impact disperses into the ground. She redistributes force vectors rather than absorbing them.</div>
-        <div class="ability-limit">Cannot redirect void-weapon scale force. Requires line-of-effect on the target system.</div>
+      <div class="ability-card" onclick="toggleCard(this)">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="ability-name">Systemic Momentum Theft</div>
+              <span class="ability-tag warp">Warp</span>
+          </div>
+          <span class="card-chevron">▼</span>
+        </div>
+        <div class="card-drawer"><div class="card-drawer-inner">
+          <div class="ability-desc">Steals momentum from entire systems rather than individuals. A Titan's leg carries lateral force. A tank's recoil transfers sideways. A power fist's impact disperses into the ground. She redistributes force vectors rather than absorbing them.</div>
+          <div class="ability-limit">Cannot redirect void-weapon scale force. Requires line-of-effect on the target system.</div>
+        </div></div>
       </div>
-      <div class="ability-card">
-        <div class="ability-name">Fractured Perception Field <span class="ability-tag warp">Warp</span></div>
-        <div class="ability-desc">Multiple observers perceive her position differently and inconsistently. One Marine sees her at front, another to the left; auspex reads her 3 metres off. Fractures coordinated targeting and squad coherence. Primarchs partially compensate through sheer cognitive speed.</div>
-        <div class="ability-limit">Sustained use increases Warp visibility. Does not fool psykers actively scanning for her anchor.</div>
+      <div class="ability-card" onclick="toggleCard(this)">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="ability-name">Fractured Perception Field</div>
+              <span class="ability-tag warp">Warp</span>
+          </div>
+          <span class="card-chevron">▼</span>
+        </div>
+        <div class="card-drawer"><div class="card-drawer-inner">
+          <div class="ability-desc">Multiple observers perceive her position differently and inconsistently. One Marine sees her at front, another to the left; auspex reads her 3 metres off. Fractures coordinated targeting and squad coherence. Primarchs partially compensate through sheer cognitive speed.</div>
+          <div class="ability-limit">Sustained use increases Warp visibility. Does not fool psykers actively scanning for her anchor.</div>
+        </div></div>
       </div>
     </div>
   </div>
 
   <!-- ═══ PHASE III ═══ -->
-  <div class="phase-section fade-in">
+  <div class="phase-section fade-in locked">
     <div class="phase-header">
       <div class="phase-badge">Phase III</div>
-      <span class="phase-title">The Anomaly — Symbiote Bond</span>
+      <span class="phase-title">The Anomaly — Symbiote Bond <span class="phase-lock-icon">🔒</span></span>
       <div class="phase-line"></div>
     </div>
 
     <div class="symbiote-box" style="margin-bottom:20px;">
-      <p><strong style="color:#6ab0c8">Symbiote Integration:</strong> Physical stats upgrade to Astartes+ tier. Regen activates. Warp ability backlash is partially absorbed. Large-mass swaps become sustainable. Spatial desync windows extend significantly.</p>
+      <p><strong style="color:#6ab0c8">Symbiote Integration:</strong> Physical stats upgrade to Astartes+ tier. Warp ability backlash is partially absorbed. Large-mass swaps become sustainable. Spatial desync windows extend significantly.</p>
     </div>
 
     <div class="abilities-grid">
-      <div class="ability-card signature">
-        <div class="ability-name">Spatial Anchor Sabotage <span class="ability-tag warp">Warp</span></div>
-        <div class="ability-desc">She disrupts the spatial agreement that objects share with local reality. Blades misalign at impact. Armour plating's force distribution fails. A bolt round grazes instead of penetrates as the target's spatial context is briefly severed from the agreed-upon coordinate system.</div>
-        <div class="ability-limit">Subtle misalignment only at this stage. Cannot fully phase objects. Attracts daemonic attention with heavy use.</div>
+      <div class="ability-card signature" onclick="toggleCard(this)">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="ability-name">Spatial Anchor Sabotage</div>
+              <span class="ability-tag warp">Warp</span>
+          </div>
+          <span class="star-badge">★</span><span class="card-chevron">▼</span>
+        </div>
+        <div class="card-drawer"><div class="card-drawer-inner">
+          <div class="ability-desc">She disrupts the spatial agreement that objects share with local reality. Blades misalign at impact. Armour plating's force distribution fails. A bolt round grazes instead of penetrates as the target's spatial context is briefly severed from the agreed-upon coordinate system.</div>
+          <div class="ability-limit">Subtle misalignment only at this stage. Cannot fully phase objects. Attracts daemonic attention with heavy use.</div>
+        </div></div>
       </div>
-      <div class="ability-card signature">
-        <div class="ability-name">Partial Spatial Offset <span class="ability-tag warp">Warp</span></div>
-        <div class="ability-desc">She exists slightly out of phase with local reality — layered between positional states. Attacks strike the symbiote's misaligned mass rather than her body, passing through inconsistently. Not intangibility; she is <em>desynced</em>. Blades pass through as if through shadow-weight substance.</div>
-        <div class="ability-limit">Cannot maintain constantly. Overuse risks Warp backlash and symbiote strain. Psyk-out grenades partially negate.</div>
+      <div class="ability-card signature" onclick="toggleCard(this)">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="ability-name">Partial Spatial Offset</div>
+              <span class="ability-tag warp">Warp</span>
+          </div>
+          <span class="star-badge">★</span><span class="card-chevron">▼</span>
+        </div>
+        <div class="card-drawer"><div class="card-drawer-inner">
+          <div class="ability-desc">She exists slightly out of phase with local reality — layered between positional states. Attacks strike the symbiote's misaligned mass rather than her body, passing through inconsistently. Not intangibility; she is <em>desynced</em>. Blades pass through as if through shadow-weight substance.</div>
+          <div class="ability-limit">Cannot maintain constantly. Overuse risks Warp backlash and symbiote strain. Psyk-out grenades partially negate.</div>
+        </div></div>
       </div>
-      <div class="ability-card">
-        <div class="ability-name">Karmic Reflection <span class="ability-tag warp">Warp</span></div>
-        <div class="ability-desc">Does not block damage — instead lets the Warp reinterpret killing intent. A fraction of the attacker's intent is redirected: armour fails at the worst microsecond, footing shifts, a joint locks. Primarchs relying on overwhelming inevitability face sudden, unpredictable uncertainty.</div>
-        <div class="ability-limit">Passive, not absolute. Cannot redirect Warp-empowered strikes (e.g. The Emperor's Sword) fully.</div>
+      <div class="ability-card" onclick="toggleCard(this)">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="ability-name">Karmic Reflection</div>
+              <span class="ability-tag warp">Warp</span>
+          </div>
+          <span class="card-chevron">▼</span>
+        </div>
+        <div class="card-drawer"><div class="card-drawer-inner">
+          <div class="ability-desc">Does not block damage — instead lets the Warp reinterpret killing intent. A fraction of the attacker's intent is redirected: armour fails at the worst microsecond, footing shifts, a joint locks. Primarchs relying on overwhelming inevitability face sudden, unpredictable uncertainty.</div>
+          <div class="ability-limit">Passive, not absolute. Cannot redirect Warp-empowered strikes (e.g. The Emperor's Sword) fully.</div>
+        </div></div>
       </div>
-      <div class="ability-card">
-        <div class="ability-name">Warp Silence Field <span class="ability-tag warp">Warp</span></div>
-        <div class="ability-desc">Dampens psychic noise in a small radius around her. Does not nullify psykers — instead makes precognition unreliable, slows psychic reaction time, and introduces static into Warp awareness. Deeply unsettling to Librarians and Chaos Sorcerers.</div>
-        <div class="ability-limit">Short range (~15m). Does not block sustained psychic assault. Grey Knights resist this partially.</div>
+      <div class="ability-card" onclick="toggleCard(this)">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="ability-name">Warp Silence Field</div>
+              <span class="ability-tag warp">Warp</span>
+          </div>
+          <span class="card-chevron">▼</span>
+        </div>
+        <div class="card-drawer"><div class="card-drawer-inner">
+          <div class="ability-desc">Dampens psychic noise in a small radius around her. Does not nullify psykers — instead makes precognition unreliable, slows psychic reaction time, and introduces static into Warp awareness. Deeply unsettling to Librarians and Chaos Sorcerers.</div>
+          <div class="ability-limit">Short range (~15m). Does not block sustained psychic assault. Grey Knights resist this partially.</div>
+        </div></div>
       </div>
-      <div class="ability-card">
-        <div class="ability-name">Structural Truth Sight <span class="ability-tag passive">Passive</span></div>
-        <div class="ability-desc">Perceives stress fractures in ceramite, micro-gaps in Terminator joints, flawed harmonics in void shields, and emotional fractures in minds. Her strikes land exactly where armour was weakest — not because she is stronger, but because she is exploiting pre-existing failure points.</div>
+      <div class="ability-card" onclick="toggleCard(this)">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="ability-name">Structural Truth Sight</div>
+              <span class="ability-tag passive">Passive</span>
+          </div>
+          <span class="card-chevron">▼</span>
+        </div>
+        <div class="card-drawer"><div class="card-drawer-inner">
+          <div class="ability-desc">Perceives stress fractures in ceramite, micro-gaps in Terminator joints, flawed harmonics in void shields, and emotional fractures in minds. Her strikes land exactly where armour was weakest — not because she is stronger, but because she is exploiting pre-existing failure points.</div>
+        </div></div>
       </div>
-      <div class="ability-card">
-        <div class="ability-name">Adaptive Symbiote Skin <span class="ability-tag symbiote">Symbiote</span></div>
-        <div class="ability-desc">The symbiote hardens at anticipated impact points, redistributes force across her body, and temporarily thickens over vital organs. She is no longer killed by a single bolter shot. During rapid movement, this skin partially extends her spatial offset, making her harder to interact with at high velocity.</div>
+      <div class="ability-card" onclick="toggleCard(this)">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="ability-name">Adaptive Symbiote Skin</div>
+              <span class="ability-tag symbiote">Symbiote</span>
+          </div>
+          <span class="card-chevron">▼</span>
+        </div>
+        <div class="card-drawer"><div class="card-drawer-inner">
+          <div class="ability-desc">The symbiote hardens at anticipated impact points, redistributes force across her body, and temporarily thickens over vital organs. She is no longer killed by a single bolter shot. During rapid movement, this skin partially extends her spatial offset, making her harder to interact with at high velocity.</div>
+        </div></div>
       </div>
     </div>
   </div>
 
   <!-- ═══ PHASE IV ═══ -->
-  <div class="phase-section fade-in">
+  <div class="phase-section fade-in locked">
     <div class="phase-header">
       <div class="phase-badge">Phase IV</div>
-      <span class="phase-title">The Myth — Kamui-Adjacent Mastery</span>
+      <span class="phase-title">The Myth — Absolute Spatial Dominion <span class="phase-lock-icon">🔒</span></span>
       <div class="phase-line"></div>
     </div>
 
     <div class="abilities-grid">
-      <div class="ability-card signature">
-        <div class="ability-name">Dual Anchor Dominance <span class="ability-tag warp">Warp</span></div>
-        <div class="ability-desc">Aeryn exists simultaneously at a physical anchor (Point A) and a conceptual offset anchor (Point B). She can snap between which is dominant in an instant — not teleportation, but choosing which version of her position reality acknowledges. Against a Primarch's swing, she shifts anchor; they miss, she counters with stolen momentum.</div>
-        <div class="ability-limit">Maintaining both anchors requires concentration. Warp disruption (Blanks, Grey Knights) collapses the secondary anchor.</div>
+      <div class="ability-card signature" onclick="toggleCard(this)">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="ability-name">Dual Anchor Dominance</div>
+              <span class="ability-tag warp">Warp</span>
+          </div>
+          <span class="star-badge">★</span><span class="card-chevron">▼</span>
+        </div>
+        <div class="card-drawer"><div class="card-drawer-inner">
+          <div class="ability-desc">Aeryn exists simultaneously at a physical anchor (Point A) and a conceptual offset anchor (Point B). She can snap between which is dominant in an instant — not teleportation, but choosing which version of her position reality acknowledges. Against a Primarch's swing, she shifts anchor; they miss, she counters with stolen momentum.</div>
+          <div class="ability-limit">Maintaining both anchors requires concentration. Warp disruption (Blanks, Grey Knights) collapses the secondary anchor.</div>
+        </div></div>
       </div>
-      <div class="ability-card signature">
-        <div class="ability-name">Personal Offset Domain <span class="ability-tag warp">Warp</span></div>
-        <div class="ability-desc">Reality near her becomes <em>negotiable</em>. A thin bubble forms around her body where spatial rules obey her interpretation rather than consensus physics. Not a pocket dimension, not teleport spam — just an area where she has editorial control over position, trajectory, and impact. This is her closest approach to Kamui-level spatial mastery.</div>
-        <div class="ability-limit">Heavily taxing. Daemonic entities take notice. Blanks collapse the domain. Physical exhaustion accumulates rapidly. Duration measured in seconds during peak stress.</div>
+      <div class="ability-card signature" onclick="toggleCard(this)">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="ability-name">Personal Offset Domain</div>
+              <span class="ability-tag warp">Warp</span>
+          </div>
+          <span class="star-badge">★</span><span class="card-chevron">▼</span>
+        </div>
+        <div class="card-drawer"><div class="card-drawer-inner">
+          <div class="ability-desc">Reality near her becomes <em>negotiable</em>. A thin bubble forms around her body where spatial rules obey her interpretation rather than consensus physics. Not a pocket dimension, not teleport spam — just an area where she has editorial control over position, trajectory, and impact. This is her closest approach to Kamui-level spatial mastery.</div>
+          <div class="ability-limit">Heavily taxing. Daemonic entities take notice. Blanks collapse the domain. Physical exhaustion accumulates rapidly. Duration measured in seconds during peak stress.</div>
+        </div></div>
       </div>
-      <div class="ability-card">
-        <div class="ability-name">Forced Position Reversal <span class="ability-tag warp">Warp</span></div>
-        <div class="ability-desc">At the moment of contact with a lethal strike, she reverses relative positions with the attacker. A Primarch's blade aimed at her throat results in the attacker suddenly occupying where she stood. Makes close-quarters gods deeply hesitant — they cannot commit fully without risking self-reversal.</div>
-        <div class="ability-limit">Reactionary only. One use per engagement before recovery is needed. Very high Warp expenditure.</div>
+      <div class="ability-card" onclick="toggleCard(this)">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="ability-name">Forced Position Reversal</div>
+              <span class="ability-tag warp">Warp</span>
+          </div>
+          <span class="card-chevron">▼</span>
+        </div>
+        <div class="card-drawer"><div class="card-drawer-inner">
+          <div class="ability-desc">At the moment of contact with a lethal strike, she reverses relative positions with the attacker. A Primarch's blade aimed at her throat results in the attacker suddenly occupying where she stood. Makes close-quarters gods deeply hesitant — they cannot commit fully without risking self-reversal.</div>
+          <div class="ability-limit">Reactionary only. One use per engagement before recovery is needed. Very high Warp expenditure.</div>
+        </div></div>
       </div>
-      <div class="ability-card">
-        <div class="ability-name">Limited Causality Edit <span class="ability-tag warp">Warp</span></div>
-        <div class="ability-desc">Once per encounter, she can declare that an action did not occur as intended. A killing blow becomes a glancing wound. A binding spell misfires. She rewrites that specific moment in local Warp memory. This is how she survives a clean Primarch hit despite polar-bear-baseline durability.</div>
-        <div class="ability-limit">Once per engagement. Costs her heavily — physical injury, Warp scar, potential daemonic attention. May shorten her lifespan over time.</div>
+      <div class="ability-card" onclick="toggleCard(this)">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="ability-name">Limited Causality Edit</div>
+              <span class="ability-tag warp">Warp</span>
+          </div>
+          <span class="card-chevron">▼</span>
+        </div>
+        <div class="card-drawer"><div class="card-drawer-inner">
+          <div class="ability-desc">Once per encounter, she can declare that an action did not occur as intended. A killing blow becomes a glancing wound. A binding spell misfires. She rewrites that specific moment in local Warp memory. This is how she survives a clean Primarch hit despite polar-bear-baseline durability.</div>
+          <div class="ability-limit">Once per engagement. Costs her heavily — physical injury, Warp scar, potential daemonic attention. May shorten her lifespan over time.</div>
+        </div></div>
       </div>
-      <div class="ability-card">
-        <div class="ability-name">Symbiote Warp Insulation <span class="ability-tag symbiote">Symbiote</span></div>
-        <div class="ability-desc">The symbiote has learned to create micro-stability pockets even inside null fields. It cannot negate a Culexus or Blank — but it reduces collapse severity, buffering Warp fluctuations and partially insulating her soul signature. Her abilities diminish near Blanks rather than failing entirely.</div>
+      <div class="ability-card" onclick="toggleCard(this)">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="ability-name">Symbiote Warp Insulation</div>
+              <span class="ability-tag symbiote">Symbiote</span>
+          </div>
+          <span class="card-chevron">▼</span>
+        </div>
+        <div class="card-drawer"><div class="card-drawer-inner">
+          <div class="ability-desc">The symbiote has learned to create micro-stability pockets even inside null fields. It cannot negate a Culexus or Blank — but it reduces collapse severity, buffering Warp fluctuations and partially insulating her soul signature. Her abilities diminish near Blanks rather than failing entirely.</div>
+        </div></div>
       </div>
-      <div class="ability-card">
-        <div class="ability-name">Soul Anchor Misalignment <span class="ability-tag passive">Passive</span></div>
-        <div class="ability-desc">Her soul is "out of phase" with standard Warp interaction. She cannot easily be soul-targeted, erased by Warp powers, or possessed. Daemon-binding rituals find no purchase. Grey Knights' soul-severing attacks still work, but require more effort. Tzeentch observes; Chaos cannot categorise her.</div>
+      <div class="ability-card" onclick="toggleCard(this)">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="ability-name">Soul Anchor Misalignment</div>
+              <span class="ability-tag passive">Passive</span>
+          </div>
+          <span class="card-chevron">▼</span>
+        </div>
+        <div class="card-drawer"><div class="card-drawer-inner">
+          <div class="ability-desc">Her soul is "out of phase" with standard Warp interaction. She cannot easily be soul-targeted, erased by Warp powers, or possessed. Daemon-binding rituals find no purchase. Grey Knights' soul-severing attacks still work, but require more effort. Tzeentch observes; Chaos cannot categorise her.</div>
+        </div></div>
       </div>
     </div>
   </div>
@@ -998,60 +1667,218 @@
   <div class="section-title fade-in">Key Story Events</div>
   <div class="timeline fade-in">
 
-    <div class="timeline-event">
-      <span class="timeline-label">Year Zero</span>
-      <div class="timeline-title">The Village Massacre</div>
-      <div class="timeline-desc">An Ultramarines company destroys Aeryn's village under xenocide compliance protocol. Aeryndal kills the squad, leaves one survivor limbless aboard a doomed ship. Declares vengeance. Joins the Vaelyr resistance.</div>
+    <div class="timeline-event" onclick="toggleCard(this)">
+      <div class="card-header">
+        <div class="timeline-event-summary">
+          <span class="timeline-type-incident">Incident</span>
+          <span class="timeline-label">105.M42 · Day 073</span>
+          <div class="timeline-title">The Village Massacre</div>
+        </div>
+        <span class="card-chevron">▼</span>
+      </div>
+      <div class="card-drawer"><div class="card-drawer-inner">
+        <div class="timeline-desc">An Ultramarines company destroys Aeryn's village under xenocide compliance protocol. Aeryndal kills the squad, leaves one survivor limbless aboard a doomed ship. Declares vengeance. Joins the Vaelyr resistance.</div>
+      </div></div>
     </div>
 
-    <div class="timeline-event">
-      <span class="timeline-label">Years 1–Several</span>
-      <div class="timeline-title">The Resistance</div>
-      <div class="timeline-desc">Aeryn fights alongside Vaelyr technical specialists, thinning Imperial Astartes numbers and thwarting operations. Develops advanced engineering and mechanical expertise. The Vaelyr repurpose star-launch railguns into orbital weapons, inflicting severe losses on the Imperial blockade fleet.</div>
+    <div class="timeline-operation" id="op-resistance">
+      <div class="timeline-operation-header" onclick="toggleOperation('op-resistance')">
+        <div class="timeline-event-summary">
+          <span class="timeline-operation-type">Operation</span>
+          <span class="timeline-operation-date">105–109.M42</span>
+          <div class="timeline-operation-title">The Vaelyr Resistance</div>
+        </div>
+        <span class="timeline-op-chevron">▼</span>
+      </div>
+      <div class="timeline-operation-body">
+        <div class="timeline-sub-events">
+
+          <div class="timeline-sub-event" onclick="toggleSub(this, event)">
+            <div class="timeline-sub-header">
+              <div>
+                <span class="timeline-sub-label">105.M42 — 110.M42</span>
+                <div class="timeline-sub-title">Guerrilla Campaign</div>
+              </div>
+              <span class="timeline-sub-chevron">▼</span>
+            </div>
+            <div class="timeline-sub-drawer">
+              <div class="timeline-sub-desc">Aeryn fights alongside Vaelyr technical specialists, thinning Imperial Astartes numbers and thwarting operations. Develops advanced engineering and mechanical expertise. The Vaelyr repurpose star-launch railguns into orbital weapons, inflicting severe losses on the Imperial blockade fleet.</div>
+            </div>
+          </div>
+
+          <div class="timeline-sub-event" onclick="toggleSub(this, event)">
+            <div class="timeline-sub-header">
+              <div>
+                <span class="timeline-sub-label">109.M42 · Day 291</span>
+                <div class="timeline-sub-title">Infiltration of the Ultramarine Battle Barge</div>
+              </div>
+              <span class="timeline-sub-chevron">▼</span>
+            </div>
+            <div class="timeline-sub-drawer">
+              <div class="timeline-sub-desc">Aeryn launches herself via railgun shell into an Ultramarine battle barge. Infiltrates, relays Astartes movement intelligence, then uses her engineering knowledge to overload the ship's reactors. Escapes via a captured Ultramarine shuttle as the barge is destroyed.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
 
-    <div class="timeline-event milestone">
-      <span class="timeline-label">Critical Event</span>
-      <div class="timeline-title">Infiltration of the Ultramarine Battle Barge</div>
-      <div class="timeline-desc">Aeryn launches herself via railgun shell into an Ultramarine battle barge. Infiltrates, relays Astartes movement intelligence, then uses her engineering knowledge to overload the ship's reactors. Escapes via a captured Ultramarine shuttle as the barge is destroyed.</div>
+    <div class="timeline-event milestone" onclick="toggleCard(this)">
+      <div class="card-header">
+        <div class="timeline-event-summary">
+          <span class="timeline-type-incident">Milestone</span>
+          <span class="timeline-label">110.M42 · Day 047</span>
+          <div class="timeline-title">The Black Hole Gambit</div>
+        </div>
+        <span class="card-chevron">▼</span>
+      </div>
+      <div class="card-drawer"><div class="card-drawer-inner">
+        <div class="timeline-desc">The Imperium declares Exterminatus. What they did not know: the Vaelyr's inter-core construction was not a weapon — it was an ignition mechanism, built over generations to channel catastrophic gravitational force through the planet's existing mass. The Exterminatus beams provided the precise energy catalyst needed. The Vaelyr did not build a doomsday device. They built a trigger, and let the Imperium pull it. The resulting gravitational collapse destroyed every Imperial vessel in orbital range. The Vaelyr died — but the Imperium fired the killing blow on a gun already pointed back at itself.</div>
+      </div></div>
     </div>
 
-    <div class="timeline-event milestone">
-      <span class="timeline-label">The End of the Vaelyr</span>
-      <div class="timeline-title">The Black Hole Gambit</div>
-      <div class="timeline-desc">The Imperium declares Exterminatus. What they did not know: the Vaelyr's inter-core construction was not a weapon — it was an ignition mechanism, built over generations to channel catastrophic gravitational force through the planet's existing mass. The Exterminatus beams provided the precise energy catalyst needed. The Vaelyr did not build a doomsday device. They built a trigger, and let the Imperium pull it. The resulting gravitational collapse destroyed every Imperial vessel in orbital range. The Vaelyr died — but the Imperium fired the killing blow on a gun already pointed back at itself.</div>
+    <div class="timeline-event milestone" onclick="toggleCard(this)">
+      <div class="card-header">
+        <div class="timeline-event-summary">
+          <span class="timeline-type-incident">Milestone</span>
+          <span class="timeline-label">110.M42 · Day 048</span>
+          <div class="timeline-title">The Geometric Plane — Tzeentch's Accord</div>
+        </div>
+        <span class="card-chevron">▼</span>
+      </div>
+      <div class="card-drawer"><div class="card-drawer-inner">
+        <div class="timeline-desc">Mortally wounded in the void, Aeryn is pulled into a strange white geometric plane by the Lord of Change. Offered power, she accepts a black symbiotic sphere — designed to subjugate her. Her Warp essence instead breaks its shackles, creating a genuine, caring bond. Tzeentch returns her to space, content to observe.</div>
+      </div></div>
     </div>
 
-    <div class="timeline-event milestone">
-      <span class="timeline-label">Pivotal</span>
-      <div class="timeline-title">The Geometric Plane — Tzeentch's Accord</div>
-      <div class="timeline-desc">Mortally wounded in the void, Aeryn is pulled into a strange white geometric plane by the Lord of Change. Offered power, she accepts a black symbiotic sphere — designed to subjugate her. Her Warp essence instead breaks its shackles, creating a genuine, caring bond. Tzeentch returns her to space, content to observe.</div>
+    <div class="timeline-event" onclick="toggleCard(this)">
+      <div class="card-header">
+        <div class="timeline-event-summary">
+          <span class="timeline-type-incident">Incident</span>
+          <span class="timeline-label">110.M42 · Day 112</span>
+          <div class="timeline-title">Passage Aboard a Black Templars Barge</div>
+        </div>
+        <span class="card-chevron">▼</span>
+      </div>
+      <div class="card-drawer"><div class="card-drawer-inner">
+        <div class="timeline-desc">Aeryn drifts through Warp-space until a Black Templars battle barge appears. She infiltrates and stows away, awaiting opportunity to disembark undetected.</div>
+      </div></div>
     </div>
 
-    <div class="timeline-event">
-      <span class="timeline-label">Weeks Later</span>
-      <div class="timeline-title">Passage Aboard a Black Templars Barge</div>
-      <div class="timeline-desc">Aeryn drifts through Warp-space until a Black Templars battle barge appears. She infiltrates and stows away, awaiting opportunity to disembark undetected.</div>
+    <div class="timeline-gap">
+      <span class="timeline-gap-label">110–112.M42 · Unrecorded</span>
+      <span class="timeline-gap-note">Events occurred. No record exists or has been recovered.</span>
     </div>
 
-    <div class="timeline-event">
-      <span class="timeline-label">~2 Years Later</span>
-      <div class="timeline-title">The Covert Infiltration</div>
-      <div class="timeline-desc">Using forged Imperial records and the symbiote's human disguise capability, Aeryn embeds herself within a covert Imperial institution. Her goal: to travel under cover and sabotage Imperial strongholds from within while concealing her true nature entirely.</div>
+    <div class="timeline-operation" id="op-covert">
+      <div class="timeline-operation-header" onclick="toggleOperation('op-covert')">
+        <div class="timeline-event-summary">
+          <span class="timeline-operation-type">Operation</span>
+          <span class="timeline-operation-date">112–114.M42</span>
+          <div class="timeline-operation-title">The Covert Infiltration</div>
+        </div>
+        <span class="timeline-op-chevron">▼</span>
+      </div>
+      <div class="timeline-operation-body">
+        <div class="timeline-sub-events">
+
+          <div class="timeline-sub-event" onclick="toggleSub(this, event)">
+            <div class="timeline-sub-header">
+              <div>
+                <span class="timeline-sub-label">112.M42</span>
+                <div class="timeline-sub-title">Embedding Within Imperial Institution</div>
+              </div>
+              <span class="timeline-sub-chevron">▼</span>
+            </div>
+            <div class="timeline-sub-drawer">
+              <div class="timeline-sub-desc">Using forged Imperial records and the symbiote's human disguise capability, Aeryn embeds herself within a covert Imperial institution. Her goal: to travel under cover and sabotage Imperial strongholds from within while concealing her true nature entirely.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
 
-    <div class="timeline-event milestone">
-      <span class="timeline-label">Recent</span>
-      <div class="timeline-title">AZ-125-1 — The Tyranid Archive</div>
-      <div class="timeline-desc">Deployed to a jungle world under Tyranid invasion, Aeryn's mission group is tasked with recovering Mechanicus archives. Aeryn uses her symbiote to restore power and access camera feeds, discovering Tyranid forces converging on hundreds of civilians sheltering in the archive. When her superior condemns the civilians, Aeryn and one other sister volunteer alone to rescue them — ordered there as punishment by a furious Astoria. She holds a massive gate open bare-handed until all survivors escape, destroying her arms in the process, before fighting through Tyranid hordes to extract herself. She later encounters Salamander Xa'con, and the two fight their way to evacuation together, bringing down a Carnifex in the process. In the aftermath, Aeryn attributes her superhuman feats to divine miracle — an Act of Faith — neatly weaponising the Sororitas' own theology to neutralise Astoria's ability to challenge her account. The institution is predisposed to believe it. Astoria is not, but has no ground to stand on.</div>
+    <div class="timeline-operation milestone-op" id="op-az125">
+      <div class="timeline-operation-header" onclick="toggleOperation('op-az125')">
+        <div class="timeline-event-summary">
+          <span class="timeline-operation-type">Operation · Milestone</span>
+          <span class="timeline-operation-date">114.M42 — Ongoing</span>
+          <div class="timeline-operation-title">AZ-125-1 — The Jungle World</div>
+        </div>
+        <span class="timeline-op-chevron">▼</span>
+      </div>
+      <div class="timeline-operation-body">
+        <div class="timeline-sub-events">
+
+          <div class="timeline-sub-event" onclick="toggleSub(this, event)">
+            <div class="timeline-sub-header">
+              <div>
+                <span class="timeline-sub-label">114.M42 · Day 203 · Incident</span>
+                <div class="timeline-sub-title">The Tyranid Archive — Gate Incident</div>
+              </div>
+              <span class="timeline-sub-chevron">▼</span>
+            </div>
+            <div class="timeline-sub-drawer">
+              <div class="timeline-sub-desc">Deployed to a jungle world under Tyranid invasion, Aeryn's mission group is tasked with recovering Mechanicus archives. Aeryn uses her symbiote to restore power and access camera feeds, discovering Tyranid forces converging on hundreds of civilians sheltering in the archive. When her superior condemns the civilians, Aeryn and one other sister volunteer alone to rescue them — ordered there as punishment by a furious Astoria. She holds a massive gate open bare-handed until all survivors escape, destroying her arms in the process, before fighting through Tyranid hordes to extract herself. She later encounters Salamander Xa'con, and the two fight their way to evacuation together, bringing down a Carnifex in the process. In the aftermath, Aeryn attributes her superhuman feats to divine miracle — an Act of Faith — neatly weaponising the Sororitas' own theology to neutralise Astoria's ability to challenge her account. The institution is predisposed to believe it. Astoria is not, but has no ground to stand on.</div>
+            </div>
+          </div>
+
+          <div class="timeline-sub-event" onclick="toggleSub(this, event)">
+            <div class="timeline-sub-header">
+              <div>
+                <span class="timeline-sub-label">114.M42 · Day 218 · Incident</span>
+                <div class="timeline-sub-title">The Sonne Incident</div>
+              </div>
+              <span class="timeline-sub-chevron">▼</span>
+            </div>
+            <div class="timeline-sub-drawer">
+              <div class="timeline-sub-desc">An Ordo Hereticus Inquisitor, Valdric Sonne, arrives with a moderate retinue to investigate the AZ-125-1 miracle report. A methodical skeptic, he wants the mundane explanation — and his thoroughness makes him an institutional threat even without the personal capability to match Aeryn directly. She identifies him through the symbiote's passive monitoring of command post vox-traffic before he has named her as a suspect. Moving first, she separates a fragment of the symbiote — shed without drama, a smooth black stone already warm, already marked with a Tzeentchian geometric sigil the symbiote carries from its prior service, humming faintly with residual power. During a Tyranid incursion that pulls Sonne's bodyguard to the perimeter, his scribe conducts a routine post-breach inventory of the Inquisitor's effects. He finds the stone. He reports it, because he has no other choice. Sonne is detained by his own acolytes under mandatory protocol. In the confusion, Aeryn accesses his reporting station and transmits a case summary under his own credentials: miracle confirmed, no heresy, case closed, Inquisitor Sonne recommends the matter proceed through standard Synod channels. She signs it with his cipher. She is gone before anyone thinks to look for her. In the aftermath, she is present and visible when Sonne is formally taken — standing among the gathered personnel, silent, wearing a Sister's contempt for a man revealed as a servant of the Architect of Fate. She speaks to his bodyguard and his scribe afterward, separately. She does not accuse. She simply reflects — that Sonne had seemed unusually interested in the nature of the miracle itself, not the investigation, as though drawn to it rather than duty-bound toward it. The seed takes. Sonne hangs. The filed report, transmitted under his own hand, closes the Inquisitorial inquiry. Astoria's concurrent effort to suppress the miracle keeps it off the formal ecclesiastical record. Three separate institutional forces producing friction for different reasons — none of them aware they are serving the same purpose. The miracle exists in a disputed, unresolved administrative state. No active investigation. No record. Aeryn returns to deployment.</div>
+            </div>
+          </div>
+
+          <div class="timeline-sub-event" onclick="toggleSub(this, event)">
+            <div class="timeline-sub-header">
+              <div>
+                <span class="timeline-sub-label">114.M42 · Ongoing · Active</span>
+                <div class="timeline-sub-title">Continued Planetside Operations</div>
+              </div>
+              <span class="timeline-sub-chevron">▼</span>
+            </div>
+            <div class="timeline-sub-drawer">
+              <div class="timeline-sub-desc">The Tyranid warzone remains active. Aeryn's squad — proven capable during the archive operation — continues field deployment across the jungle world. The ongoing conflict provides both operational cover and institutional noise, keeping attention off the still-unsettled miracle record. Further incidents to be recorded.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
 
-    <div class="timeline-event milestone">
-      <span class="timeline-label">Aftermath</span>
-      <div class="timeline-title">The Sonne Incident — Inquisitor Valdric Sonne</div>
-      <div class="timeline-desc">An Ordo Hereticus Inquisitor, Valdric Sonne, arrives with a moderate retinue to investigate the AZ-125-1 miracle report. A methodical skeptic, he wants the mundane explanation — and his thoroughness makes him an institutional threat even without the personal capability to match Aeryn directly. She identifies him through the symbiote's passive monitoring of command post vox-traffic before he has named her as a suspect. Moving first, she separates a fragment of the symbiote — shed without drama, a smooth black stone already warm, already marked with a Tzeentchian geometric sigil the symbiote carries from its prior service, humming faintly with residual power. During a Tyranid incursion that pulls Sonne's bodyguard to the perimeter, his scribe conducts a routine post-breach inventory of the Inquisitor's effects. He finds the stone. He reports it, because he has no other choice. Sonne is detained by his own acolytes under mandatory protocol. In the confusion, Aeryn accesses his reporting station and transmits a case summary under his own credentials: miracle confirmed, no heresy, case closed, Inquisitor Sonne recommends the matter proceed through standard Synod channels. She signs it with his cipher. She is gone before anyone thinks to look for her. In the aftermath, she is present and visible when Sonne is formally taken — standing among the gathered personnel, silent, wearing a Sister's contempt for a man revealed as a servant of the Architect of Fate. She speaks to his bodyguard and his scribe afterward, separately. She does not accuse. She simply reflects — that Sonne had seemed unusually interested in the nature of the miracle itself, not the investigation, as though drawn to it rather than duty-bound toward it. The seed takes. Sonne hangs. The filed report, transmitted under his own hand, closes the Inquisitorial inquiry. Astoria's concurrent effort to suppress the miracle keeps it off the formal ecclesiastical record. Three separate institutional forces producing friction for different reasons — none of them aware they are serving the same purpose. The miracle exists in a disputed, unresolved administrative state. No active investigation. No record. Aeryn returns to deployment.</div>
-    </div>
+  </div>
 
+  <!-- TIMELINE LEGEND -->
+  <div class="timeline-legend fade-in">
+    <span class="timeline-legend-title">Key</span>
+    <div class="timeline-legend-item">
+      <span class="legend-dot"></span>
+      Incident — a single discrete event
+    </div>
+    <div class="timeline-legend-item">
+      <span class="legend-dot milestone"></span>
+      Milestone — a turning point in the record
+    </div>
+    <div class="timeline-legend-item">
+      <span class="legend-diamond"></span>
+      Operation — an era containing multiple incidents
+    </div>
+    <div class="timeline-legend-item">
+      <span class="legend-diamond milestone"></span>
+      Operation · Milestone — a pivotal ongoing campaign
+    </div>
+    <div class="timeline-legend-item">
+      <span class="legend-gap"></span>
+      Unrecorded — events occurred, no record recovered
+    </div>
   </div>
 
   <!-- NEW ABILITIES -->
@@ -1059,31 +1886,71 @@
   <div class="section-title fade-in">Acquired Capabilities — Engineering & Infiltration</div>
   <div class="abilities-grid fade-in">
 
-    <div class="ability-card">
-      <div class="ability-name">Advanced Engineering & Mechanics <span class="ability-tag tech">Tech</span></div>
-      <div class="ability-desc">Years working alongside Vaelyr technical specialists gave Aeryn expert-level knowledge of mechanical and engineering systems. She can field-modify, jury-rig, and repurpose complex machinery under pressure — demonstrated by bypassing Astartes bio-verification on a flamer in minutes and overloading a battle barge's reactor from within its own systems.</div>
+    <div class="ability-card" onclick="toggleCard(this)">
+      <div class="card-header">
+        <div class="card-header-left">
+          <div class="ability-name">Advanced Engineering & Mechanics</div>
+              <span class="ability-tag tech">Tech</span>
+        </div>
+        <span class="card-chevron">▼</span>
+      </div>
+      <div class="card-drawer"><div class="card-drawer-inner">
+        <div class="ability-desc">Years working alongside Vaelyr technical specialists gave Aeryn expert-level knowledge of mechanical and engineering systems. She can field-modify, jury-rig, and repurpose complex machinery under pressure — demonstrated by bypassing Astartes bio-verification on a flamer in minutes and overloading a battle barge's reactor from within its own systems.</div>
+      </div></div>
     </div>
 
-    <div class="ability-card">
-      <div class="ability-name">Symbiote Tech Interface <span class="ability-tag symbiote">Symbiote</span></div>
-      <div class="ability-desc">The symbiote can rapidly interface with and adapt to most standard Imperial technology, altering her armour or equipment to establish covert data links, restore power, access camera networks, and interpret system outputs. Used to map Tyranid movements through a failing archive's security system in real time.</div>
-      <div class="ability-limit">Requires physical contact or close proximity to the system. Slower on non-Imperial or highly archaic technologies.</div>
+    <div class="ability-card" onclick="toggleCard(this)">
+      <div class="card-header">
+        <div class="card-header-left">
+          <div class="ability-name">Symbiote Tech Interface</div>
+              <span class="ability-tag symbiote">Symbiote</span>
+        </div>
+        <span class="card-chevron">▼</span>
+      </div>
+      <div class="card-drawer"><div class="card-drawer-inner">
+        <div class="ability-desc">The symbiote can rapidly interface with and adapt to most standard Imperial technology, altering her armour or equipment to establish covert data links, restore power, access camera networks, and interpret system outputs. Used to map Tyranid movements through a failing archive's security system in real time.</div>
+        <div class="ability-limit">Requires physical contact or close proximity to the system. Slower on non-Imperial or highly archaic technologies.</div>
+      </div></div>
     </div>
 
-    <div class="ability-card">
-      <div class="ability-name">Human Disguise <span class="ability-tag symbiote">Symbiote</span></div>
-      <div class="ability-desc">The symbiote reshapes Aeryn's surface appearance to pass as human — concealing horns, tail, skin colouration, and Vaelyr physiology. Detailed enough to survive visual inspection. Paired with forged Imperial records and infiltration training, she has maintained covert identity within Imperial institutions for years.</div>
-      <div class="ability-limit">Sustained concentration from the symbiote required. Psychic scanning or auspex bio-scan risks exposure. Adrenaline spikes during combat may cause partial slippage.</div>
+    <div class="ability-card" onclick="toggleCard(this)">
+      <div class="card-header">
+        <div class="card-header-left">
+          <div class="ability-name">Human Disguise</div>
+              <span class="ability-tag symbiote">Symbiote</span>
+        </div>
+        <span class="card-chevron">▼</span>
+      </div>
+      <div class="card-drawer"><div class="card-drawer-inner">
+        <div class="ability-desc">The symbiote reshapes Aeryn's surface appearance to pass as human — concealing horns, tail, skin colouration, and Vaelyr physiology. Detailed enough to survive visual inspection. Paired with forged Imperial records and infiltration training, she has maintained covert identity within Imperial institutions for years.</div>
+        <div class="ability-limit">Sustained concentration from the symbiote required. Psychic scanning or auspex bio-scan risks exposure. Adrenaline spikes during combat may cause partial slippage.</div>
+      </div></div>
     </div>
 
-    <div class="ability-card">
-      <div class="ability-name">Infiltration & Covert Movement <span class="ability-tag passive">Passive</span></div>
-      <div class="ability-desc">Honed across years of resistance warfare and covert operations, Aeryn is an expert infiltrator — reading patrol patterns, exploiting sensor blind spots, suppressing her Warp signature on demand, and navigating hostile environments silently. Her spatial cognition gives her an innate sense of optimal concealment routes through any structure.</div>
+    <div class="ability-card" onclick="toggleCard(this)">
+      <div class="card-header">
+        <div class="card-header-left">
+          <div class="ability-name">Infiltration & Covert Movement</div>
+              <span class="ability-tag passive">Passive</span>
+        </div>
+        <span class="card-chevron">▼</span>
+      </div>
+      <div class="card-drawer"><div class="card-drawer-inner">
+        <div class="ability-desc">Honed across years of resistance warfare and covert operations, Aeryn is an expert infiltrator — reading patrol patterns, exploiting sensor blind spots, suppressing her Warp signature on demand, and navigating hostile environments silently. Her spatial cognition gives her an innate sense of optimal concealment routes through any structure.</div>
+      </div></div>
     </div>
 
-    <div class="ability-card">
-      <div class="ability-name">Extreme Pain Tolerance <span class="ability-tag passive">Passive</span></div>
-      <div class="ability-desc">Aeryn has demonstrated the capacity to continue operating under catastrophic physical trauma — holding a reinforced gate open with both arms being destroyed, then fighting through a Tyranid horde on punctured lungs and broken ribs before losing consciousness only after reaching safety. The symbiote provides adrenaline support but the underlying will is entirely her own.</div>
+    <div class="ability-card" onclick="toggleCard(this)">
+      <div class="card-header">
+        <div class="card-header-left">
+          <div class="ability-name">Extreme Pain Tolerance</div>
+              <span class="ability-tag passive">Passive</span>
+        </div>
+        <span class="card-chevron">▼</span>
+      </div>
+      <div class="card-drawer"><div class="card-drawer-inner">
+        <div class="ability-desc">Aeryn has demonstrated the capacity to continue operating under catastrophic physical trauma — holding a reinforced gate open with both arms being destroyed, then fighting through a Tyranid horde on punctured lungs and broken ribs before losing consciousness only after reaching safety. The symbiote provides adrenaline support but the underlying will is entirely her own.</div>
+      </div></div>
     </div>
 
   </div>
@@ -1093,81 +1960,102 @@
   <div class="section-title fade-in">Notable Relationships</div>
   <div class="rel-grid fade-in">
 
-    <div class="rel-card">
-      <div class="rel-card-header">
-        <div>
-          <div class="rel-name">The Symbiote</div>
-          <div class="rel-faction">Warp-Predator Organism · Pre-Chaos Origin</div>
+    <div class="rel-card faction-warp" onclick="toggleCard(this)">
+      <div class="card-header">
+        <div class="rel-card-header">
+            <div class="rel-name">The Symbiote</div>
+            <div class="rel-faction">Warp Organism · Pre-Chaos</div>
+            <div class="rel-status bond">Soul Bond</div>
         </div>
+        <span class="card-chevron">▼</span>
       </div>
-      <div class="rel-status bond">Soul Bond</div>
-      <div class="rel-desc">Originally engineered by Tzeentch as a subjugation tool, the symbiote's shackles were burned away by Aeryn's own Warp essence on contact. It formed a genuine, deep emotional bond with its host — protective, stabilising, and co-evolving. It insulates her soul, absorbs backlash, reinforces her body, and interfaces with technology on her behalf. It does not feed on her. It cares for her. As it adapts to her spatial manipulation, it is slowly developing its own understanding of Warp structure — something that even Chaos gods find unusual.</div>
+      <div class="card-drawer"><div class="card-drawer-inner">
+        <div class="rel-desc">Originally engineered by Tzeentch as a subjugation tool, the symbiote's shackles were burned away by Aeryn's own Warp essence on contact. It formed a genuine, deep emotional bond with its host — protective, stabilising, and co-evolving. It insulates her soul, absorbs backlash, reinforces her body, and interfaces with technology on her behalf. It does not feed on her. It cares for her. As it adapts to her spatial manipulation, it is slowly developing its own understanding of Warp structure — something that even Chaos gods find unusual.</div>
+      </div></div>
     </div>
 
-    <div class="rel-card">
-      <div class="rel-card-header">
-        <div>
-          <div class="rel-name">Xa'con</div>
-          <div class="rel-faction">Adeptus Astartes · Salamanders Chapter</div>
+    <div class="rel-card faction-astartes" onclick="toggleCard(this)">
+      <div class="card-header">
+        <div class="rel-card-header">
+            <div class="rel-name">Xa'con</div>
+            <div class="rel-faction">Astartes · Salamanders</div>
+            <div class="rel-status ally">Ongoing Ally</div>
         </div>
+        <span class="card-chevron">▼</span>
       </div>
-      <div class="rel-status ally">Ongoing Ally</div>
-      <div class="rel-desc">Met during the Tyranid siege of AZ-125-1's archive complex. Xa'con and Aeryn fought their way from the infirmary to evacuation together, saving a buried civilian boy along the way, and jointly bringing down a Carnifex — Xa'con losing an arm in the process. The combat coherence they displayed was remarked upon by Xa'con afterward — not the raw capability, but the synchronisation. She covered his blindspots instinctively, held positions that let him do the same, and moved in a way that suggested decades of shared training rather than hours of acquaintance. He noticed. In the aftermath, he asked a single quiet question rather than an accusation, and when she offered a partial truth — a Warp sensitivity kept hidden for obvious reasons — he chose silence over reporting. A Salamander judges by deeds. Hers were not ambiguous. He is likely the first person in years to know something real about her and choose her anyway, a fact Aeryn has not yet allowed herself to examine.</div>
+      <div class="card-drawer"><div class="card-drawer-inner">
+        <div class="rel-desc">Met during the Tyranid siege of AZ-125-1's archive complex. Xa'con and Aeryn fought their way from the infirmary to evacuation together, saving a buried civilian boy along the way, and jointly bringing down a Carnifex — Xa'con losing an arm in the process. The combat coherence they displayed was remarked upon by Xa'con afterward — not the raw capability, but the synchronisation. She covered his blindspots instinctively, held positions that let him do the same, and moved in a way that suggested decades of shared training rather than hours of acquaintance. He noticed. In the aftermath, he asked a single quiet question rather than an accusation, and when she offered a partial truth — a Warp sensitivity kept hidden for obvious reasons — he chose silence over reporting. A Salamander judges by deeds. Hers were not ambiguous. He is likely the first person in years to know something real about her and choose her anyway, a fact Aeryn has not yet allowed herself to examine.</div>
+      </div></div>
     </div>
 
-    <div class="rel-card">
-      <div class="rel-card-header">
-        <div>
-          <div class="rel-name">Astoria</div>
-          <div class="rel-faction">Adeptus Sororitas · Mission Commander</div>
+    <div class="rel-card faction-sororitas" onclick="toggleCard(this)">
+      <div class="card-header">
+        <div class="rel-card-header">
+            <div class="rel-name">Astoria</div>
+            <div class="rel-faction">Sororitas · Mission Command</div>
+            <div class="rel-status hostile">Antagonistic</div>
         </div>
+        <span class="card-chevron">▼</span>
       </div>
-      <div class="rel-status hostile">Antagonistic</div>
-      <div class="rel-desc">Aeryn's superior during her covert infiltration posting. When Astoria condemned hundreds of civilians to death during the AZ-125-1 operation, Aeryn openly defied her — and Astoria responded by ordering Aeryn and one other sister to perform the rescue alone as punishment, branding refusal as heresy. Aeryn accepted without hesitation, further infuriating Astoria. In the aftermath, Aeryn neutralised any formal threat Astoria posed by attributing her superhuman feats to divine miracle — an Act of Faith bestowed by the God Emperor. The Sororitas is institutionally predisposed to believe exactly that narrative, leaving Astoria unable to challenge it without appearing to question the Emperor's grace. Any report casting doubt on Aeryn now reflects worse on Astoria than on her target. She is effectively neutralised as an immediate threat, though her hostility remains and her resentment has nowhere to go. The only risk is institutional attention drawn by the miracle claim itself.</div>
+      <div class="card-drawer"><div class="card-drawer-inner">
+        <div class="rel-desc">Aeryn's superior during her covert infiltration posting. When Astoria condemned hundreds of civilians to death during the AZ-125-1 operation, Aeryn openly defied her — and Astoria responded by ordering Aeryn and one other sister to perform the rescue alone as punishment, branding refusal as heresy. Aeryn accepted without hesitation, further infuriating Astoria. In the aftermath, Aeryn neutralised any formal threat Astoria posed by attributing her superhuman feats to divine miracle — an Act of Faith bestowed by the God Emperor. The Sororitas is institutionally predisposed to believe exactly that narrative, leaving Astoria unable to challenge it without appearing to question the Emperor's grace. Any report casting doubt on Aeryn now reflects worse on Astoria than on her target. She is effectively neutralised as an immediate threat, though her hostility remains and her resentment has nowhere to go. The only risk is institutional attention drawn by the miracle claim itself.</div>
+      </div></div>
     </div>
 
-    <div class="rel-card">
-      <div class="rel-card-header">
-        <div>
-          <div class="rel-name">Tzeentch</div>
-          <div class="rel-faction">Chaos God · The Architect of Fate</div>
+    <div class="rel-card faction-chaos" onclick="toggleCard(this)">
+      <div class="card-header">
+        <div class="rel-card-header">
+            <div class="rel-name">Tzeentch</div>
+            <div class="rel-faction">Chaos God · Architect of Fate</div>
+            <div class="rel-status wary">Observed / Unaligned</div>
         </div>
+        <span class="card-chevron">▼</span>
       </div>
-      <div class="rel-status wary">Observed / Unaligned</div>
-      <div class="rel-desc">Tzeentch offered Aeryn an accord in a geometric Warp-plane following the destruction of her world, gifting her the symbiote as a supposed act of generosity — in truth an attempt at subjugation. When the symbiote broke free of his shackles, he feigned fury but was genuinely intrigued. He returned her to realspace knowing she would continue to drive change and chaos regardless. He watches her. He does not control her. She is aware of this and deeply wary of him.</div>
+      <div class="card-drawer"><div class="card-drawer-inner">
+        <div class="rel-desc">Tzeentch offered Aeryn an accord in a geometric Warp-plane following the destruction of her world, gifting her the symbiote as a supposed act of generosity — in truth an attempt at subjugation. When the symbiote broke free of his shackles, he feigned fury but was genuinely intrigued. He returned her to realspace knowing she would continue to drive change and chaos regardless. He watches her. He does not control her. She is aware of this and deeply wary of him.</div>
+      </div></div>
     </div>
 
-    <div class="rel-card">
-      <div class="rel-card-header">
-        <div>
-          <div class="rel-name">Roboute Guilliman</div>
-          <div class="rel-faction">Adeptus Astartes · Primarch · Lord Commander</div>
+    <div class="rel-card faction-astartes" onclick="toggleCard(this)">
+      <div class="card-header">
+        <div class="rel-card-header">
+            <div class="rel-name">Roboute Guilliman</div>
+            <div class="rel-faction">Primarch · Lord Commander</div>
+            <div class="rel-status complex">Complicated</div>
         </div>
+        <span class="card-chevron">▼</span>
       </div>
-      <div class="rel-status complex">Complicated</div>
-      <div class="rel-desc">Guilliman did not personally order the Vaelyr extermination — it was bureaucratic compliance protocol. Aeryn's initial vengeance targeted his Chapter broadly. Over time, she has observed him choose restraint over annihilation at critical moments, and he has quietly avoided committing full crusade resources to hunting her. They have met in person once. He acknowledged, without apology, that the Imperium's destruction of her people was not necessary. That single statement fractured something in her hatred. Neither trusts the other. Both respect the other's intelligence.</div>
+      <div class="card-drawer"><div class="card-drawer-inner">
+        <div class="rel-desc">Guilliman did not personally order the Vaelyr extermination — it was bureaucratic compliance protocol. Aeryn's initial vengeance targeted his Chapter broadly. Over time, she has observed him choose restraint over annihilation at critical moments, and he has quietly avoided committing full crusade resources to hunting her. They have met in person once. He acknowledged, without apology, that the Imperium's destruction of her people was not necessary. That single statement fractured something in her hatred. Neither trusts the other. Both respect the other's intelligence.</div>
+      </div></div>
     </div>
 
-    <div class="rel-card">
-      <div class="rel-card-header">
-        <div>
-          <div class="rel-name">The Vaelyr</div>
-          <div class="rel-faction">Xenos · Extinct</div>
+    <div class="rel-card faction-xenos" onclick="toggleCard(this)">
+      <div class="card-header">
+        <div class="rel-card-header">
+            <div class="rel-name">The Vaelyr</div>
+            <div class="rel-faction">Xenos · Extinct</div>
+            <div class="rel-status complex">Last Survivor</div>
         </div>
+        <span class="card-chevron">▼</span>
       </div>
-      <div class="rel-status complex">Last Survivor</div>
-      <div class="rel-desc">Aeryn is, as far as is known, the last living Vaelyr. Her people died as they lived — precisely, deliberately, and on their own terms. The black hole gambit was their final act: not desperate, but engineered. She carries their cultural knowledge, their spatial cognition, and their quiet refusal to be victimised without answer. Her restraint around civilian casualties — even Imperial ones — reflects a Vaelyr ethics that persists beyond extinction.</div>
+      <div class="card-drawer"><div class="card-drawer-inner">
+        <div class="rel-desc">Aeryn is, as far as is known, the last living Vaelyr. Her people died as they lived — precisely, deliberately, and on their own terms. The black hole gambit was their final act: not desperate, but engineered. She carries their cultural knowledge, their spatial cognition, and their quiet refusal to be victimised without answer. Her restraint around civilian casualties — even Imperial ones — reflects a Vaelyr ethics that persists beyond extinction.</div>
+      </div></div>
     </div>
 
-    <div class="rel-card">
-      <div class="rel-card-header">
-        <div>
-          <div class="rel-name">Inquisitor Valdric Sonne</div>
-          <div class="rel-faction">Ordo Hereticus · Deceased</div>
+    <div class="rel-card faction-inquisition" onclick="toggleCard(this)">
+      <div class="card-header">
+        <div class="rel-card-header">
+            <div class="rel-name">Inquisitor Valdric Sonne</div>
+            <div class="rel-faction">Ordo Hereticus · Deceased</div>
+            <div class="rel-status hostile">Neutralised — Closed File</div>
         </div>
+        <span class="card-chevron">▼</span>
       </div>
-      <div class="rel-status hostile">Neutralised — Closed File</div>
-      <div class="rel-desc">Dispatched to investigate the AZ-125-1 miracle report. A methodical skeptic who didn't believe in Acts of Faith and wanted the human hand behind the claim — which made him dangerous not through capability but through patience and paperwork. Aeryn moved against him before he had a name for his anomaly. A fragment of her symbiote, shed deliberately and already marked with a Tzeentchian sigil from the symbiote's prior service, was planted among his personal effects. His own scribe found it during a routine post-incursion inventory. His own acolytes detained him. His own credentials were used to close the investigation and file a favourable report. He was executed for Chaos affiliation. He was guilty of nothing except thoroughness. The filed report — transmitted under his cipher, recommending the miracle proceed through standard Synod channels — remains on record. The file is closed. Aeryn does not think about the fragment going cold.</div>
+      <div class="card-drawer"><div class="card-drawer-inner">
+        <div class="rel-desc">Dispatched to investigate the AZ-125-1 miracle report. A methodical skeptic who didn't believe in Acts of Faith and wanted the human hand behind the claim — which made him dangerous not through capability but through patience and paperwork. Aeryn moved against him before he had a name for his anomaly. A fragment of her symbiote, shed deliberately and already marked with a Tzeentchian sigil from the symbiote's prior service, was planted among his personal effects. His own scribe found it during a routine post-incursion inventory. His own acolytes detained him. His own credentials were used to close the investigation and file a favourable report. He was executed for Chaos affiliation. He was guilty of nothing except thoroughness. The filed report — transmitted under his cipher, recommending the miracle proceed through standard Synod channels — remains on record. The file is closed. Aeryn does not think about the fragment going cold.</div>
+      </div></div>
     </div>
 
   </div>
@@ -1585,6 +2473,36 @@
 
   .saint-exit:hover { opacity: 1; }
 </style>
+
+<script>
+  function toggleCard(el) {
+    el.classList.toggle('open');
+  }
+
+  function toggleOperation(id) {
+    const op = document.getElementById(id);
+    const isOpen = op.classList.contains('open');
+    if (isOpen) {
+      // Closing: collapse all sub-events first, then collapse the operation
+      op.querySelectorAll('.timeline-sub-event').forEach(sub => sub.classList.remove('open'));
+    }
+    op.classList.toggle('open');
+  }
+
+  function toggleSub(el, event) {
+    // Prevent the click from bubbling up to the operation header
+    if (event) event.stopPropagation();
+    el.classList.toggle('open');
+  }
+
+  // On load, ensure all operations start closed
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.timeline-operation').forEach(op => {
+      op.classList.remove('open');
+      op.querySelectorAll('.timeline-sub-event').forEach(sub => sub.classList.remove('open'));
+    });
+  });
+</script>
 
 <script>
   function activateSaintMode() {
