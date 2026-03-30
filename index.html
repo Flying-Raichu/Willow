@@ -296,18 +296,17 @@
   .timeline-event.open .card-chevron { transform: rotate(180deg); color: var(--gold); opacity: 1; }
 
   .card-drawer {
-    max-height: 0;
     overflow: hidden;
-    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 0;
     padding: 0 22px;
+    will-change: height;
+    contain: layout;
   }
 
   .ability-card.open .card-drawer,
   .rel-card.open .card-drawer,
   .timeline-event.open .card-drawer {
-    max-height: 800px;
     padding: 0 22px 18px;
-    transition: max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .card-drawer-inner {
@@ -851,14 +850,17 @@
   }
 
   .timeline-operation-body {
-    max-height: 0;
     overflow: hidden;
-    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 0;
+    will-change: height;
+    contain: layout;
   }
 
-  .timeline-operation.open .timeline-operation-body {
-    max-height: 6000px;
-    transition: max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  .timeline-sub-drawer {
+    overflow: hidden;
+    height: 0;
+    will-change: height;
+    contain: layout;
   }
 
   .timeline-sub-events {
@@ -924,16 +926,8 @@
 
   .timeline-sub-event.open .timeline-sub-chevron { transform: rotate(180deg); opacity: 0.8; }
 
-  .timeline-sub-drawer {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
   .timeline-sub-event.open .timeline-sub-drawer {
-    max-height: 2000px;
     padding-bottom: 8px;
-    transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .timeline-sub-desc {
@@ -2475,24 +2469,55 @@
 </style>
 
 <script>
+  const EASE = 'cubic-bezier(0.25, 0, 0.15, 1)';
+
+  function slideOpen(el, duration) {
+    el.style.height = '0';
+    const target = el.scrollHeight + 'px';
+    el.animate([{ height: '0' }, { height: target }], {
+      duration: duration,
+      easing: EASE,
+    }).onfinish = () => { el.style.height = 'auto'; };
+  }
+
+  function slideClose(el, duration) {
+    el.style.height = el.scrollHeight + 'px';
+    el.offsetHeight;
+    el.animate([{ height: el.style.height }, { height: '0' }], {
+      duration: duration,
+      easing: EASE,
+      fill: 'forwards'
+    }).onfinish = () => { el.style.height = '0'; };
+  }
+
   function toggleCard(el) {
-    el.classList.toggle('open');
+    const drawer = el.querySelector('.card-drawer');
+    const isOpen = el.classList.toggle('open');
+    isOpen ? slideOpen(drawer, 260) : slideClose(drawer, 200);
   }
 
   function toggleOperation(id) {
     const op = document.getElementById(id);
-    const isOpen = op.classList.contains('open');
-    if (isOpen) {
-      // Closing: collapse all sub-events first, then collapse the operation
-      op.querySelectorAll('.timeline-sub-event').forEach(sub => sub.classList.remove('open'));
+    const isOpen = op.classList.toggle('open');
+    const body = op.querySelector('.timeline-operation-body');
+    if (!isOpen) {
+      op.querySelectorAll('.timeline-sub-event').forEach(sub => {
+        if (sub.classList.contains('open')) {
+          sub.classList.remove('open');
+          slideClose(sub.querySelector('.timeline-sub-drawer'), 150);
+        }
+      });
+      slideClose(body, 280);
+    } else {
+      slideOpen(body, 320);
     }
-    op.classList.toggle('open');
   }
 
   function toggleSub(el, event) {
-    // Prevent the click from bubbling up to the operation header
     if (event) event.stopPropagation();
-    el.classList.toggle('open');
+    const drawer = el.querySelector('.timeline-sub-drawer');
+    const isOpen = el.classList.toggle('open');
+    isOpen ? slideOpen(drawer, 240) : slideClose(drawer, 180);
   }
 
   // On load, ensure all operations start closed
