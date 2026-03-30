@@ -576,31 +576,35 @@
   .timeline-event {
     position: relative;
     margin-bottom: 10px;
-    background: transparent;
-    border: none;
-    border-left: 2px solid transparent;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-left: 2px solid var(--blood);
     padding: 0;
     cursor: pointer;
-    transition: border-left-color 0.2s;
+    transition: border-left-color 0.2s, background 0.2s;
   }
 
-  .timeline-event:hover { border-left-color: var(--blood); }
+  .timeline-event:hover {
+    border-left-color: var(--crimson);
+    background: #1f0d0d;
+  }
 
   .timeline-event.milestone {
     border-left-color: rgba(201,168,76,0.5);
     margin-bottom: 14px;
+    background: rgba(201,168,76,0.04);
   }
 
   .timeline-event.milestone:hover {
     border-left-color: var(--gold);
+    background: rgba(201,168,76,0.08);
   }
 
   .timeline-event::before {
     content: '';
     position: absolute;
-    left: -33px;
-    top: 50%;
-    transform: translateY(-50%);
+    left: -36px;
+    top: 18px;
     width: 9px; height: 9px;
     border-radius: 50%;
     background: var(--blood);
@@ -618,7 +622,8 @@
     background: #2a1800;
     border-color: var(--gold);
     width: 11px; height: 11px;
-    left: -34px;
+    left: -37px;
+    top: 17px;
     box-shadow: 0 0 10px rgba(201,168,76,0.6);
   }
 
@@ -701,17 +706,28 @@
 
   .timeline-operation:hover { border-left-color: var(--crimson); }
 
+  .timeline-operation:hover::before {
+    background: var(--crimson);
+    box-shadow: 0 0 10px rgba(192,57,43,0.9);
+  }
+
+  .timeline-operation.milestone-op:hover::before {
+    background: var(--gold);
+    box-shadow: 0 0 14px rgba(201,168,76,1);
+  }
+
   .timeline-operation::before {
     content: '';
     position: absolute;
-    left: -33px;
-    top: 22px;
+    left: -37px;
+    top: 18px;
     width: 11px; height: 11px;
     border-radius: 2px;
     background: var(--blood);
     border: 1px solid var(--crimson);
     box-shadow: 0 0 6px rgba(192,57,43,0.5);
     transform: rotate(45deg);
+    transition: background 0.2s, box-shadow 0.2s;
   }
 
   .timeline-operation-header {
@@ -971,9 +987,7 @@
   .timeline-gap::before {
     content: '';
     position: absolute;
-    left: -33px;
-    top: 50%;
-    transform: translateY(-50%);
+    left: -34px;
     width: 9px; height: 9px;
     border-radius: 50%;
     border: 1px dashed rgba(139,0,0,0.5);
@@ -2476,10 +2490,15 @@
   function slideOpen(el, duration) {
     el.style.height = '0';
     const target = el.scrollHeight + 'px';
-    el.animate([{ height: '0' }, { height: target }], {
+    const anim = el.animate([{ height: '0' }, { height: target }], {
       duration: duration,
       easing: EASE,
-    }).onfinish = () => { el.style.height = 'auto'; };
+      fill: 'forwards'
+    });
+    anim.onfinish = () => {
+      anim.cancel();
+      el.style.height = 'auto';
+    };
   }
 
   function slideClose(el, duration) {
